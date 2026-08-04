@@ -2,6 +2,7 @@ import express = require("express");
 import routes = require("./routes");
 import serviceAccount = require("../firebase-adminsdk.json");
 
+const pageNotFoundHandler = require("./middlewares/page-not-found.middleware");
 const errorHandler = require("./middlewares/error-handler.middleware");
 const { initializeApp, cert } = require("firebase-admin/app");
 
@@ -14,6 +15,7 @@ const app = express();
 
 app.use(express.json());
 app.use(routes);
+pageNotFoundHandler(app);
 errorHandler(app);
 
 app.listen(3000, () => {

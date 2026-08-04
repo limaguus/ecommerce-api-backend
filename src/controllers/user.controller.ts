@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import firestore = require("firebase-admin/firestore");
 import ValidationError = require("../errors/validation.error");
+import NotFoundError = require("../errors/not-found.error");
 
 async function listarUsuarios(req: Request, res: Response, next: NextFunction) {
   try {
@@ -25,8 +26,7 @@ async function buscarUsuario(req: Request, res: Response, next: NextFunction) {
     const doc = await firestore.getFirestore().collection("users").doc(userId).get();
 
     if (!doc.exists) {
-      res.status(404).send({ message: "Usuário não encontrado" });
-      return;
+      throw new NotFoundError("Usuário não encontrado");
     }
 
     res.send({
@@ -63,10 +63,7 @@ async function atualizarUsuario(req: Request, res: Response, next: NextFunction)
     const doc = await docRef.get();
 
     if (!doc.exists) {
-      res.status(404).send({
-        message: "Usuário não encontrado",
-      });
-      return;
+      throw new NotFoundError("Usuário não encontrado");
     }
 
     await docRef.update({
@@ -90,10 +87,7 @@ async function excluirUsuario(req: Request, res: Response, next: NextFunction) {
     const doc = await docRef.get();
 
     if (!doc.exists) {
-      res.status(404).send({
-        message: "Usuário não encontrado",
-      });
-      return;
+      throw new NotFoundError("Usuário não encontrado");
     }
 
     await docRef.delete();
