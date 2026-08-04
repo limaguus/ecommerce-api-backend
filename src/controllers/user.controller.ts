@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import getFirestore = require("firebase-admin/firestore");
 import firestore = require("firebase-admin/firestore");
 
 type User = {
@@ -20,13 +21,21 @@ async function listarUsuarios(req: Request, res: Response) {
   res.send(usuarios);
 }
 
-function buscarUsuario(req: Request, res: Response) {
-  let userId = Number(req.params.id);
-  let user = usuarios.find((user) => user.id === userId);
+async function buscarUsuario(req: Request, res: Response) {
+  const userId = String(req.params.id);
 
-  res.send(user);
+  const doc = await firestore.getFirestore().collection("users").doc(userId).get();
+
+  if (!doc.exists) {
+    res.status(404).send({ message: "Usuário não encontrado" });
+    return;
+  }
+
+  res.send({
+    id: doc.id,
+    ...doc.data(),
+  });
 }
-
 async function criarUsuario(req: Request, res: Response) {
   let user = req.body;
   const userSalvo = await firestore.getFirestore().collection("users").add(user); 
@@ -36,47 +45,44 @@ async function criarUsuario(req: Request, res: Response) {
   });
 }
 
-function atualizarUsuario(req: Request, res: Response) {
-  let userId = Number(req.params.id);
-  let user = req.body;
-  let indexOf = usuarios.findIndex((user) => user.id === userId);
+async function atualizarUsuario(req: Request, res: Response) {
+  const userId = String(req.params.id);
+  const user = req.body;
 
-  if (indexOf === -1) {
+  const docRef = firestore.getFirestore().collection("users").doc(userId);
+  const doc = await docRef.get();
+
+  if (!doc.exists) {
     res.status(404).send({
       message: "Usuário não encontrado",
     });
     return;
   }
 
-  let usuarioEncontrado = usuarios[indexOf];
-
-  if (!usuarioEncontrado) {
-    res.status(404).send({
-      message: "Usuário não encontrado",
-    });
-    return;
-  }
-
-  usuarioEncontrado.nome = user.nome;
-  usuarioEncontrado.email = user.email;
+  await docRef.update({
+    nome: user.nome,
+    email: user.email,
+  });
 
   res.send({
     message: "Usuário alterado com sucesso!",
   });
 }
 
-function excluirUsuario(req: Request, res: Response) {
-  let userId = Number(req.params.id);
-  let indexOf = usuarios.findIndex((user) => user.id === userId);
+async function excluirUsuario(req: Request, res: Response) {
+  const userId = String(req.params.id);
 
-  if (indexOf === -1) {
+  const docRef = firestore.getFirestore().collection("users").doc(userId);
+  const doc = await docRef.get();
+
+  if (!doc.exists) {
     res.status(404).send({
       message: "Usuário não encontrado",
     });
     return;
   }
 
-  usuarios.splice(indexOf, 1);
+  await docRef.delete();
 
   res.send({
     message: "Usuário excluído com sucesso!",
